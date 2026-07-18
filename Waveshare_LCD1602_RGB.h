@@ -81,7 +81,6 @@ public:
 	Waveshare_LCD1602_RGB(uint8_t lcd_cols,uint8_t lcd_rows);
 	
 	void init();
-	void home();
 	void display();
 	void command(uint8_t);
 	void send(uint8_t *data, uint8_t len);
@@ -103,7 +102,6 @@ public:
 	void rightToLeft();
 	void noAutoscroll();
 	void autoscroll();
-	void customSymbol(uint8_t location, uint8_t charmap[]);
 	void setColorWhite(){setRGB(255, 255, 255);}
 private:
 	void begin(uint8_t cols, uint8_t rows);

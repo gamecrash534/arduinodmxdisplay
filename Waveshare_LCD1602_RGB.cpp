@@ -211,24 +211,3 @@ void Waveshare_LCD1602_RGB::autoscroll(void)
     _showmode |= LCD_ENTRYSHIFTINCREMENT;
     command(LCD_ENTRYMODESET | _showmode);
 }
-
-void Waveshare_LCD1602_RGB::customSymbol(uint8_t location, uint8_t charmap[])
-{
-
-    location &= 0x7; // we only have 8 locations 0-7
-    command(LCD_SETCGRAMADDR | (location << 3));
-    
-    
-    uint8_t data[9];
-    data[0] = 0x40;
-    for(int i=0; i<8; i++)
-    {
-        data[i+1] = charmap[i];
-    }
-    send(data, 9);
-}
-void Waveshare_LCD1602_RGB::home()
-{
-    command(LCD_RETURNHOME);        // set cursor position to zero
-    delayMicroseconds(2000);        // this command takes a long time!
-}

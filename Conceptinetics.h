@@ -34,9 +34,6 @@
 #include <Arduino.h>
 #include <inttypes.h>
 
-#include "Rdm_Uid.h"
-#include "Rdm_Defines.h"
-
 #define DMX_MAX_FRAMESIZE       513     // Startbyte + 512 Slots
 #define DMX_MIN_FRAMESIZE       2       // Startbyte + 1 Slot
 
@@ -45,7 +42,6 @@
 #define DMX_STARTCODE_SIZE      1       // Size of startcode in bytes
 
 #define DMX_START_CODE          0x0     // Start code for a DMX frame
-#define RDM_START_CODE          0xcc    // Start code for a RDM frame
 
 // Uncomment to enable Inter slot delay ) (avg < 76uSec) ... 
 // mimum is zero according to specification
@@ -85,21 +81,6 @@ namespace dmx
         dmxWaitStartAddress,
         dmxData,
         dmxFrameReady,
-	};
-};
-
-namespace rdm
-{
-    enum rdmState
-    {
-        rdmUnknown,
-        rdmStartByte,
-        rdmSubStartCode,
-        rdmMessageLength,
-        rdmData,
-        rdmChecksumHigh,
-        rdmChecksumLow,
-        rdmFrameReady,
     };
 };
 
@@ -232,148 +213,6 @@ class DMX_Slave : public DMX_FrameBuffer
         dmx::dmxState   m_state;
 
         static void (*event_onFrameReceived)(unsigned short channelsReceived);
-};
-
-
-class RDM_FrameBuffer : public IFrameBuffer
-{
-    public:
-        //
-        // Constructor
-        //
-        RDM_FrameBuffer     ( void ) {};
-        ~RDM_FrameBuffer    ( void ) {};
-
-        uint16_t getBufferSize ( void );        
-
-        uint8_t getSlotValue ( uint16_t index );
-        void    setSlotValue ( uint16_t index, uint8_t value );
-        void    clear ( void );        
-
-        uint8_t &operator[] ( uint16_t index );
-
-    public: // functions to provide access from USART       
-        // Process incoming byte from USART, 
-        // returns false when no more data is accepted
-        bool processIncoming ( uint8_t val, bool first = false );
-
-        // Process outgoing byte to USART
-        // returns false when no more data is available
-        bool fetchOutgoing ( volatile uint8_t *udr, bool first = false );
-
-    protected:
-        // Process received frame
-        virtual void processFrame ( void ) = 0;
-
-    //private:
-    protected:
-        rdm::rdmState   m_state;       // State for pushing the message in
-        RDM_Message     m_msg;
-        RDM_Checksum    m_csRecv;      // Checksum received in rdm message
-};
-
-//
-// RDM_Responder 
-//
-class RDM_Responder : public RDM_FrameBuffer
-{
-    public:
-        //
-        // m        = manufacturer id (16bits)
-        // d1-d4    = device id (32bits)
-        //
-        RDM_Responder   ( uint16_t m, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, DMX_Slave &slave);
-        ~RDM_Responder  ( void );
-
-        void    setDeviceInfo 
-                ( 
-                    uint16_t deviceModelId, 
-                    rdm::RdmProductCategory productCategory,
-                    uint8_t personalities = 1,
-                    uint8_t personality = 1
-                )
-        {
-            m_DeviceModelId         = deviceModelId;
-            m_ProductCategory       = productCategory;
-            m_Personalities         = personalities;
-            m_Personality           = personality;
-        };
-
-        //
-        // Set vendor software version id
-        //
-        // v1 = MOST SIGNIFICANT
-        // v2... 
-        // v3...
-        // v4 = LEAST SIGNIFICANT
-        //
-        void    setSoftwareVersionId ( uint8_t v1, uint8_t v2, uint8_t v3, uint8_t v4 )
-        {
-            m_SoftwareVersionId[0] = v1;
-            m_SoftwareVersionId[1] = v2;
-            m_SoftwareVersionId[2] = v3;
-            m_SoftwareVersionId[3] = v4;
-        }
-
-        // Currently no sensors and subdevices supported
-        // void    AddSensor ( void );
-        // void    AddSubDevice ( void );
-
-        uint8_t getPersonality ( void ) { return m_Personality; };
-        void    setPersonality ( uint8_t personality ) { m_Personality = personality; };
-   
-        // Register on identify device event handler
-        void    onIdentifyDevice ( void (*func)(bool) );
-        void    onDeviceLabelChanged ( void (*func) (const char*, uint8_t) );
-        void    onDMXStartAddressChanged ( void (*func) (uint16_t) );
-        void    onDMXPersonalityChanged ( void (*func) (uint8_t) );
-
-
-        // Set the device label
-        void    setDeviceLabel ( const char *label, size_t len );
-
-        // Enable, Disable rdm responder
-        void enable ( void )    { m_rdmStatus.enabled = true; m_rdmStatus.mute = false; };
-        void disable ( void )   { m_rdmStatus.enabled = false; };
-
-        union
-        {
-            uint8_t  raw;
-            struct
-            {
-                uint8_t mute:1; 
-                uint8_t ident:1;
-                uint8_t enabled:1;  // Rdm responder enable/disable
-            };
-        } m_rdmStatus;
-
-
-    protected:  
-        virtual void processFrame ( void );
-
-        // Discovery to unque brach packets only requires
-        // the data part of the packet to be transmitted
-        // without breaks or header
-        void repondDiscUniqueBranch ( void );
-
-        // Helpers for generating response packets which 
-        // have larger datafields
-        void populateDeviceInfo ( void );
-
-    private:
-        RDM_Uid                     m_devid;            // Holds our unique device ID
-        uint8_t                     m_Personalities;    // The total number of supported personalities
-        uint8_t                     m_Personality;      // The currently active personality
-        uint16_t                    m_DeviceModelId;
-        uint8_t                     m_SoftwareVersionId[4]; // 32 bit Software version
-        rdm::RdmProductCategory     m_ProductCategory;
- 
-        char                        m_deviceLabel[32];  // Device label
-
-        static void (*event_onIdentifyDevice)(bool);
-        static void (*event_onDeviceLabelChanged)(const char*, uint8_t);
-        static void (*event_onDMXStartAddressChanged)(uint16_t);
-        static void (*event_onDMXPersonalityChanged)(uint8_t);
 };
 
 
