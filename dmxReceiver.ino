@@ -1,4 +1,4 @@
-#include <Conceptinetics.h>
+#include "Conceptinetics.h"
 #include <Wire.h>
 #include "Waveshare_LCD1602_RGB.h"
 
@@ -11,14 +11,12 @@ Waveshare_LCD1602_RGB lcd(16, 2);
 uint8_t lastRead[512];
 
 void setup() {
-  pinMode(13, OUTPUT);
   dmx_slave.enable();
   dmx_slave.setStartAddress(1);
 
   lcd.init();
   lcd.setCursor(0, 0);
-  lcd.send_string("begin");
-
+  write0("Ch000: 000");
   for (uint8_t i : lastRead) {
     lastRead[i] = 0;
   }
@@ -35,7 +33,7 @@ void loop() {
     lastRead[i - 1] = v;
 
     String s = String("Ch" + prependNullsToNum(i) + ": " + prependNullsToNum(v));
-    write1(s.c_str());
+    write0(s.c_str());
   }
   //interrupts();
 }
