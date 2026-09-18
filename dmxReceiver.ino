@@ -16,10 +16,7 @@ void setup() {
 
   lcd.init();
   lcd.setCursor(0, 0);
-  write0("Ch000: 000");
-  for (uint8_t i : lastRead) {
-    lastRead[i] = 0;
-  }
+  write0("no new value yet");
 }
 
 void loop() {
