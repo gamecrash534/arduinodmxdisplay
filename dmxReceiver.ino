@@ -16,7 +16,7 @@ void setup() {
 
     lcd.init();
     lcd.setCursor(0, 0);
-    lcd.send_string("no values yet");
+    lcd.send_string("Ch000: 000");
 }
 
 void loop() {
